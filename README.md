@@ -7,7 +7,7 @@ By accident, while testing a way to do graph in assembly to render and present d
 
 This is why I've created this application, which is a second and more polished version of my first RNG test for zero program.
 
-Its usage is quite simple, just run it from the terminal, and wait for the results to be shown at command line screen, in a table for easy reading. As and added benefit, I also included code to count 1's and -1's as well.
+Its usage is quite simple, just run it from the terminal, and wait for the results to be shown at command line screen, in a table for easy reading. As an added benefit, I also included code to count 1's and -1's as well.
 
 ## How it works?
 
