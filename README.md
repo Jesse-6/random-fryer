@@ -1,5 +1,8 @@
 
 # Random Fryer: zero verify tool for x86-64 RNG units
+<p align="center">
+    <img src="./screenshot/scr_AMD1.png" alt="Running on AMD processor screenshot" width=50% />
+</p>
 
 #### Short history on AMD processor's RNG unit not being able to generate a 0
 
