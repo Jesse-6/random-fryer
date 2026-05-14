@@ -15,7 +15,10 @@ struct  TERMIOS
         .ospeed             rd 1    ; output speed
 end struct
 
-
+struct TIMESPEC
+        .sec                rq 1
+        .nsec               rq 1
+end struct
 
 FLAG_MUST_EXIT = 0000_0001b
 FLAG_UPDATED   = 0000_0010b
@@ -46,7 +49,7 @@ _rdata  align 1
                             xb '├────┴───┬─────┬───────┬────────────────────────────────────────┤',10
                             xb '│Threads:│     │Status:│                                        │',10
                             xb '╞════════╧═════╧═══════╧════════════════════════════════════════╡',10
-            .blank          xb '│                                                               │',10
+                            xb '│                                                               │',10
                             xb '└───────────────────────────────────────────────────────────────┘',10
                             xb 0
 
@@ -62,6 +65,8 @@ _rdata  align 1
                             xb '│                                                               │',10
                             xb '└───────────────────────────────────────────────────────────────┘',10
                             xb 0
+
+        blank_row           xb '│                                                               │',0
 
         help_msg            xb 'Use this application to check if your processor can generate',10
                             xb 'the number 0 as a result from its random number generator,',10
@@ -109,6 +114,12 @@ _data   align 4
             .m1.seed.32     xd 0
             .m1.seed.64     xd 0
             .tries          xq 0    ; Number of random number requests
+
+        Run:
+            .seconds        xd 0
+            .minutes        xd 0
+            .hours          xd 0
+            .days           xd 0
 
         flags               xw 0 or FLAG_UPDATED
 
@@ -285,7 +296,7 @@ _code   Start entry:        mov         r10, [stdout]
                             prefetcht2  [Count+32]
                             prefetcht2  [Count+64]
 
-                            sub         rsp, 16
+                            sub         rsp, 64
                             pthread_create(rsp, NULL, &RS_thread, 1);
                             pthread_create(&rsp+8, NULL, &RS_thread, 2);
 
@@ -299,12 +310,59 @@ _code   Start entry:        mov         r10, [stdout]
                             cmp         ax, 3
                             jne         @b
 
-                            fprintf(*stdout, <27,"[2F",27,"[2C",27,"[32mRunning...   ",27,"[2E",0>);
-                            fflush(*stdout);
+                            clock_gettime(CLOCK_REALTIME_COARSE, &rsp+32);
 
                     @1      usleep(50'000);
-                            test        [flags], FLAG_UPDATED
-                            jz          @3f
+                            ; test        [flags], FLAG_UPDATED
+                            ; jz          @3f
+
+                            clock_gettime(CLOCK_REALTIME_COARSE, &rsp+16);
+
+                    @rdata  billion     xd 1'000'000'000
+                    @rdata  million     xd 1'000'000
+                            finit
+
+                            fild        [Count.tries]
+                            fidiv       [million]
+                            fdecstp
+
+                            fstcw       [rsp+48]
+                            xor         [rsp+49], byte 1100b
+                            fldcw       [rsp+48]
+
+                            fild        qword [rsp+16]
+                            fild        qword [rsp+24]
+                            fild        qword [rsp+32]
+                            fild        qword [rsp+40]
+                            fidiv       [billion]
+                            faddp
+                            fstp        st3
+                            fidiv       [billion]
+                            faddp
+                            fsubrp
+                            fld         st0
+
+                            fistp       [Run.seconds]
+                            fisub       [Run.seconds]
+                            wait
+                            mov         eax, [Run.seconds]
+                            mov         ecx, 86400  ; days
+                            mov         r8d, 3600   ; hours
+                            mov         r9d, 60     ; minutes
+                            cqo
+                            div         ecx
+                            mov         [Run.days], eax
+                            mov         eax, edx
+                            cqo
+                            div         r8d
+                            mov         [Run.hours], eax
+                            mov         eax, edx
+                            cqo
+                            div         r9d
+                            mov         [Run.minutes], eax
+                            mov         [Run.seconds], edx
+                            fiadd       [Run.seconds]
+
                             mov         eax, 7
                             mov         edx, 174
                             mov         ecx, 114
@@ -312,17 +370,19 @@ _code   Start entry:        mov         r10, [stdout]
                             cmovnz      eax, edx
                             test        [flags], FLAG_ZERO_ACK
                             cmovnz      eax, ecx
-                            fprintf(*stdout, <27,"[8F",27,"[6C",27,"[37m% 8u", \
+                            fprintf(*stdout, <27,"[8F",27,"[6C",27,"[0;37m% 8u", \
                                 27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u", \
                                 27,"[2E",27,"[38;5;%um",27,"[6C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u", \
                                 27,"[2C% 8u",27,"[2C% 8u",27,"[2E",27,"[37m",27,"[6C% 8u",27,"[2C% 8u", \
                                 27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2E", \
-                                27,"[44G% 20lu",27,"[2E",0>, \
+                                27,"[43G% 20.2LfM",27,"[3G",27,"[1;34m", \
+                                "Running time: %ud %02u:%02u:%04.1Lf  ",27,"[2E",0>, \
                                 *Count.p1.rand.16, *Count.p1.rand.32, *Count.p1.rand.64, *Count.p1.seed.16, \
                                 *Count.p1.seed.32, *Count.p1.seed.64, eax, *Count._0.rand.16, \
                                 *Count._0.rand.32, *Count._0.rand.64, *Count._0.seed.16, *Count._0.seed.32, \
                                 *Count._0.seed.64, *Count.m1.rand.16, *Count.m1.rand.32, *Count.m1.rand.64, \
-                                *Count.m1.seed.16, *Count.m1.seed.32, *Count.m1.seed.64, *Count.tries);
+                                *Count.m1.seed.16, *Count.m1.seed.32, *Count.m1.seed.64, st1, \
+                                *Run.days, *Run.hours, *Run.minutes, st0);
 
                     @rdata  status_fmt  xb 27,"[12F",27,"[25C",27,"[%umCPU has %s",27,"[0m",27,"[12E",0
                             test        [flags], FLAG_HAS_ZERO
@@ -349,16 +409,18 @@ _code   Start entry:        mov         r10, [stdout]
                             pthread_join([rsp+8], NULL);
 
 
-                            add         rsp, 16
+                            add         rsp, 64
 
-                            fprintf(*stdout, <27,"[2F",27,"[2C",27,"[37mFinished.   ",27,"[0m",27,"[2E",0>);
+                            fprintf(*stdout, <27,"[0m",27,"[2F%s",27,"[3G",27,"[36m", \
+                                "Finished. Iterations done: %lu.", \
+                                27,"[0m",27,"[2E",0>, &blank_row, *Count.tries);
                             fflush(*stdout);
 
                             jmp         Main.end
 
-        Main.abort:         fprintf(*stdout, <27,"[2F%s",27,"[2F", \
+        Main.abort:         fprintf(*stdout, <27,"[2F%s", \
                                 27,"[3G",27,"[1;33mAborted.",27,"[0m",27,"[2E",0>, \
-                                &header.blank);
+                                &blank_row);
 
         Main.end:           xor         [term.lflag], ECHO
                             tcsetattr(STDIN_FILENO, TCSAFLUSH, &term);
@@ -500,13 +562,13 @@ _code   Start entry:        mov         r10, [stdout]
                     @@      lock inc    [Count.tries]
                             mfence
 
-                            mov         esi, 300'000
-                            mov         rax, [Count.tries]
-                            cqo
-                            div         rsi
-                            test        rdx, rdx
-                            jnz         @f
-                            lock or     [flags], FLAG_UPDATED
+                            ; mov         esi, 600'000
+                            ; mov         rax, [Count.tries]
+                            ; cqo
+                            ; div         rsi
+                            ; cmp         rdx, 1'000
+                            ; ja          @f
+                            ; lock or     [flags], FLAG_UPDATED
 
                     @@      test        [flags], FLAG_MUST_EXIT
                             jz          @1b
