@@ -447,8 +447,11 @@ _code   Start entry:        mov         r10, [stdout]
                             lock bts   [flags], di
 
                     @1      pause
+                            test        [flags], FLAG_MUST_EXIT
+                            jnz         .end
                             rdrand      dx
                             jnc         @1b
+
                             test        dx, dx
                             jnz         @f
                             lock inc    [Count._0.rand.16]
@@ -466,8 +469,11 @@ _code   Start entry:        mov         r10, [stdout]
 
                     @@      lock inc    [Count.tries]
                     @@      pause
+                            test        [flags], FLAG_MUST_EXIT
+                            jnz         .end
                             rdseed      cx
                             jnc         @b
+
                             test        cx, cx
                             jnz         @f
                             lock inc    [Count._0.seed.16]
@@ -485,8 +491,11 @@ _code   Start entry:        mov         r10, [stdout]
 
                     @@      lock inc    [Count.tries]
                     @@      pause
+                            test        [flags], FLAG_MUST_EXIT
+                            jnz         .end
                             rdrand      eax
                             jnc         @b
+
                             test        eax, eax
                             jnz         @f
                             lock inc    [Count._0.rand.32]
@@ -504,8 +513,11 @@ _code   Start entry:        mov         r10, [stdout]
 
                     @@      lock inc    [Count.tries]
                     @@      pause
+                            test        [flags], FLAG_MUST_EXIT
+                            jnz         .end
                             rdseed      r9d
                             jnc         @b
+
                             test        r9d, r9d
                             jnz         @f
                             lock inc    [Count._0.seed.32]
@@ -523,8 +535,11 @@ _code   Start entry:        mov         r10, [stdout]
 
                     @@      lock inc    [Count.tries]
                     @@      pause
+                            test        [flags], FLAG_MUST_EXIT
+                            jnz         .end
                             rdrand      rdi
                             jnc         @b
+
                             test        rdi, rdi
                             jnz         @f
                             lock inc    [Count._0.rand.64]
@@ -542,8 +557,11 @@ _code   Start entry:        mov         r10, [stdout]
 
                     @@      lock inc    [Count.tries]
                     @@      pause
+                            test        [flags], FLAG_MUST_EXIT
+                            jnz         .end
                             rdseed      rsi
                             jnc         @b
+
                             test        rsi, rsi
                             jnz         @f
                             lock inc    [Count._0.seed.64]
@@ -573,6 +591,6 @@ _code   Start entry:        mov         r10, [stdout]
                     @@      test        [flags], FLAG_MUST_EXIT
                             jz          @1b
 
-                            pop         rbp
+            .end:           pop         rbp
                             xor         rax, rax
                             ret
