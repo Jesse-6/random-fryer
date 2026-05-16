@@ -231,7 +231,7 @@ _code   Start entry:        mov         r10, [stdout]
                             xor         [term.lflag], ECHO
                             tcsetattr(STDIN_FILENO, TCSADRAIN, &term);
 
-                            fprintf(*stdout, &header);
+                            fprintf(*stdout, <"%s",27,"[?25l",27,"7",0>, &header);
 
                     @rdata  AMD_warn    db 27,"[33mmight have 'zero generate' problem",0
                     @rdata  Intel_msg   db 27,"[36mshould not have problem",0
@@ -250,7 +250,7 @@ _code   Start entry:        mov         r10, [stdout]
                             mov         ecx, 47
                             repe        scasb
                             fprintf(*stdout, \
-                                <27,"[6A",27,"[7C",27,"[37m","%s", \
+                                <27,"8",27,"[6A",27,"[7C",27,"[37m","%s", \
                                 27,"[2E",27,"[11C","%u", \
                                 27,"[26G","%s", \
                                 27,"[3E",27,"[0m",10,0>, \
@@ -261,9 +261,9 @@ _code   Start entry:        mov         r10, [stdout]
                             test        [flags], FLAG_STRAIGHT
                             jnz         @f2
 
-                            fprintf(*stdout, <27,"[2A",27,"[2C",27,"[1;36m", \
+                            fprintf(*stdout, <27,"8",27,"[2A",27,"[2C",27,"[1;36m", \
                                 "Check if this processor can generate 0 as a random number!", \
-                                27,"[0m",27,"[2E",0>);
+                                27,"[0m",27,"[2E",27,"[0J",0>);
                             usleep(10'000'000);
                             test        [flags], FLAG_MUST_EXIT
                             jnz         Main.abort
@@ -274,10 +274,10 @@ _code   Start entry:        mov         r10, [stdout]
                             cvtsi2sd    xmm0, ebx
                             cvtsi2sd    xmm5, edx
                             divsd       xmm0, xmm5
-                            fprintf(*stdout, <27,"[2A",27,"[2C", \
+                            fprintf(*stdout, <27,"8",27,"[2A",27,"[2C", \
                                 27,"[1;33m","Starting in %.01lf seconds, press ",27,"[32mCTRL-C", \
                                 27,"[33m to quit at anytime...  ",27,"[0m", \
-                                27,"[2E",0>, xmm0);
+                                27,"[2E",27,"[0J",0>, xmm0);
                             fflush(*stdout);
                             usleep(100'000);
                             test        [flags], FLAG_MUST_EXIT
@@ -285,12 +285,12 @@ _code   Start entry:        mov         r10, [stdout]
                             dec         ebx
                             jns         @b
 
-                    @@      fprintf(*stdout, <27,"[3A%s",0>,&run_table);
-                            fprintf(*stdout, <27,"[10F",27,"[2C",27,"[1;38;5;134m#",27,"[3C", \
+                    @@      fprintf(*stdout, <27,"8",27,"[3A%s",27,"7",0>,&run_table);
+                            fprintf(*stdout, <27,"8",27,"[10F",27,"[2C",27,"[1;38;5;134m#",27,"[3C", \
                                 27,"[38;5;190mRand 16",27,"[3CRand 32",27,"[3CRand 64",27,"[3C", \
                                 27,"[38;5;51mSeed 16",27,"[3CSeed 32",27,"[3CSeed 64",27,"[2E",27,"[C", \
                                 27,"[38;5;39m+1:",27,"[2E",27,"[C",27,"[38;5;182m 0:",27,"[2E",27,"[C", \
-                                27,"[38;5;202m-1:",27,"[0m",27,"[4E",0>);
+                                27,"[38;5;202m-1:",27,"[0m",27,"[4E",27,"[0J",0>);
 
                             prefetcht2  [Count]
                             prefetcht2  [Count+32]
@@ -370,13 +370,13 @@ _code   Start entry:        mov         r10, [stdout]
                             cmovnz      eax, edx
                             test        [flags], FLAG_ZERO_ACK
                             cmovnz      eax, ecx
-                            fprintf(*stdout, <27,"[8F",27,"[6C",27,"[0;37m% 8u", \
+                            fprintf(*stdout, <27,"8",27,"[8F",27,"[6C",27,"[0;37m% 8u", \
                                 27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u", \
                                 27,"[2E",27,"[38;5;%um",27,"[6C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u", \
                                 27,"[2C% 8u",27,"[2C% 8u",27,"[2E",27,"[37m",27,"[6C% 8u",27,"[2C% 8u", \
                                 27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2E", \
                                 27,"[43G% 20.2LfM",27,"[3G",27,"[1;34m", \
-                                "Running time: %ud %02u:%02u:%04.1Lf  ",27,"[2E",0>, \
+                                "Running time: %ud %02u:%02u:%04.1Lf  ",27,"[2E",27,"[0J",0>, \
                                 *Count.p1.rand.16, *Count.p1.rand.32, *Count.p1.rand.64, *Count.p1.seed.16, \
                                 *Count.p1.seed.32, *Count.p1.seed.64, eax, *Count._0.rand.16, \
                                 *Count._0.rand.32, *Count._0.rand.64, *Count._0.seed.16, *Count._0.seed.32, \
@@ -384,7 +384,7 @@ _code   Start entry:        mov         r10, [stdout]
                                 *Count.m1.seed.16, *Count.m1.seed.32, *Count.m1.seed.64, st1, \
                                 *Run.days, *Run.hours, *Run.minutes, st0);
 
-                    @rdata  status_fmt  xb 27,"[12F",27,"[25C",27,"[%umCPU has %s",27,"[0m",27,"[12E",0
+                    @rdata  status_fmt  xb 27,"8",27,"[12F",27,"[25C",27,"[%umCPU has %s",27,"[0m",27,"[12E",0
                             test        [flags], FLAG_HAS_ZERO
                             jz          @f
                             test        [flags], FLAG_ZERO_ACK
@@ -411,15 +411,15 @@ _code   Start entry:        mov         r10, [stdout]
 
                             add         rsp, 64
 
-                            fprintf(*stdout, <27,"[0m",27,"[2F%s",27,"[3G",27,"[36m", \
+                            fprintf(*stdout, <27,"8",27,"[0m",27,"[2F%s",27,"[3G",27,"[36m", \
                                 "Finished. Iterations done: %lu.", \
-                                27,"[0m",27,"[2E",0>, &blank_row, *Count.tries);
+                                27,"[0m",27,"[2E",27,"[?25h",27,"[0J",0>, &blank_row, *Count.tries);
                             fflush(*stdout);
 
                             jmp         Main.end
 
-        Main.abort:         fprintf(*stdout, <27,"[2F%s", \
-                                27,"[3G",27,"[1;33mAborted.",27,"[0m",27,"[2E",0>, \
+        Main.abort:         fprintf(*stdout, <27,"8",27,"[?25h",27,"[2F%s", \
+                                27,"[3G",27,"[1;33mAborted.",27,"[0m",27,"[2E",27,"[0J",0>, \
                                 &blank_row);
 
         Main.end:           xor         [term.lflag], ECHO
