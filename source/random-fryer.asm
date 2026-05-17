@@ -27,7 +27,8 @@ FLAG_HAS_ZERO  = 0000_1000b
 FLAG_RSV_THRD1 = 0001_0000b
 FLAG_RSV_THRD2 = 0010_0000b
 
-FLAG_BM_UNLOCK = 1000_0000b
+FLAG_BIT_BM_TOGGLE = 6
+FLAG_BIT_BM_UNLOCK = 7
 
 FLAG_ZERO_ACK  = 1 shl 15
 FLAG_FAIL_ACK  = 1 shl 14
@@ -316,7 +317,7 @@ _code   Start entry:        mov         r10, [stdout]
 
                             clock_gettime(CLOCK_REALTIME_COARSE, &rsp+32);
 
-                    @1      usleep(100'000);
+                    @1      usleep(50'000);
                             ; test        [flags], FLAG_UPDATED
                             ; jz          @3f
 
@@ -389,6 +390,8 @@ _code   Start entry:        mov         r10, [stdout]
                                 *Run.days, *Run.hours, *Run.minutes, st0);
 
                             ; Benchmark display (random numbers per second)
+                            lock btc    [flags], FLAG_BIT_BM_TOGGLE ;
+                            jnc         @f2                         ; bistable action
                             mov         rax, [rsp+24]
                             mov         r10, 100'000'000
                             cqo
@@ -396,14 +399,13 @@ _code   Start entry:        mov         r10, [stdout]
                             cmp         al, 5
                             je          @f
                             cmp         al, 0
-                            je          @f
-                            jmp         @f2
+                            jne         @f2
 
                     @@      xor         r10d, r10d
                             mov         r11d, 2
                             xchg        [Count.benchmark], r10d
-                            lock bts    [flags], bsf FLAG_BM_UNLOCK
-                            jnc         @f                      ; discard first result
+                            lock bts    [flags], FLAG_BIT_BM_UNLOCK ;
+                            jnc         @f                          ; discard first result
 
                             cvtsi2sd    xmm0, r10d
                             cvtsi2sd    xmm1, r11d

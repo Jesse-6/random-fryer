@@ -3,6 +3,11 @@
 <p align="center">
     <img src="./screenshot/scr_AMD1.png" alt="Running on AMD processor screenshot" width=50% />
 </p>
+<p align="center">
+    <i>Bottom fields: run length (blue), iterations counter | numbers per second</i>
+</p>
+
+---
 
 #### Short history on AMD processor's RNG unit not being able to generate a 0
 
@@ -14,7 +19,7 @@ Its usage is quite simple, just run it from the terminal, and wait for the resul
 
 ## How it works?
 
-It presents itself to the user, and shortly then, starts running 2 threads to extract, as much as possible, numbers from hardware random number generator and counting 0, 1 and -1 occurences, in 16, 32 and 64 bit sizes. And the main thread periodically renders the result to screen, including the number of succesful iterations with the RNG unit. After detecting a zero, or after some iterations that not result in any zero being generated, a status message is shown at the screen, with either a success or failure result accordingly.
+It presents itself to the user, and shortly then, starts running 2 threads to extract, as much as possible, numbers from hardware random number generator and counting 0, 1 and -1 occurences, in 16, 32 and 64 bit sizes. And the main thread periodically renders the result to screen, including the number of successful iterations with the RNG unit. After detecting a zero, or after some iterations that not result in any zero being generated, a status message is shown at the screen, with either a success or failure result accordingly.
 
 Those 2 threads I've mentioned run at full speed to extract the maximum data as possible. They use a technique to lower the power consumption from CPUs they are using, but still they're 100% CPU usage threads anyway. Keep in mind that this is normal for this application so far.
 
