@@ -26,6 +26,9 @@ FLAG_UNLOCKED  = 0000_0100b
 FLAG_HAS_ZERO  = 0000_1000b
 FLAG_RSV_THRD1 = 0001_0000b
 FLAG_RSV_THRD2 = 0010_0000b
+
+FLAG_BM_UNLOCK = 1000_0000b
+
 FLAG_ZERO_ACK  = 1 shl 15
 FLAG_FAIL_ACK  = 1 shl 14
 FLAG_STRAIGHT  = 1 shl 13
@@ -113,6 +116,7 @@ _data   align 4
             .m1.seed.16     xd 0
             .m1.seed.32     xd 0
             .m1.seed.64     xd 0
+            .benchmark      xd 0    ; RNG performance counter
             .tries          xq 0    ; Number of random number requests
 
         Run:
@@ -312,7 +316,7 @@ _code   Start entry:        mov         r10, [stdout]
 
                             clock_gettime(CLOCK_REALTIME_COARSE, &rsp+32);
 
-                    @1      usleep(50'000);
+                    @1      usleep(100'000);
                             ; test        [flags], FLAG_UPDATED
                             ; jz          @3f
 
@@ -375,8 +379,8 @@ _code   Start entry:        mov         r10, [stdout]
                                 27,"[2E",27,"[38;5;%um",27,"[6C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u", \
                                 27,"[2C% 8u",27,"[2C% 8u",27,"[2E",27,"[37m",27,"[6C% 8u",27,"[2C% 8u", \
                                 27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2E", \
-                                27,"[43G% 20.2LfM",27,"[3G",27,"[1;34m", \
-                                "Running time: %ud %02u:%02u:%04.1Lf  ",27,"[2E",27,"[0J",0>, \
+                                27,"[33G% 18.2LfMi |",27,"[3G",27,"[1;34m", \
+                                "Frying time: %ud %02u:%02u:%04.1Lf ",27,"[2E",27,"[0J",0>, \
                                 *Count.p1.rand.16, *Count.p1.rand.32, *Count.p1.rand.64, *Count.p1.seed.16, \
                                 *Count.p1.seed.32, *Count.p1.seed.64, eax, *Count._0.rand.16, \
                                 *Count._0.rand.32, *Count._0.rand.64, *Count._0.seed.16, *Count._0.seed.32, \
@@ -384,8 +388,33 @@ _code   Start entry:        mov         r10, [stdout]
                                 *Count.m1.seed.16, *Count.m1.seed.32, *Count.m1.seed.64, st1, \
                                 *Run.days, *Run.hours, *Run.minutes, st0);
 
+                            ; Benchmark display (random numbers per second)
+                            mov         rax, [rsp+24]
+                            mov         r10, 100'000'000
+                            cqo
+                            div         r10
+                            cmp         al, 5
+                            je          @f
+                            cmp         al, 0
+                            je          @f
+                            jmp         @f2
+
+                    @@      xor         r10d, r10d
+                            mov         r11d, 2
+                            xchg        [Count.benchmark], r10d
+                            lock bts    [flags], bsf FLAG_BM_UNLOCK
+                            jnc         @f                      ; discard first result
+
+                            cvtsi2sd    xmm0, r10d
+                            cvtsi2sd    xmm1, r11d
+                            cvtsi2sd    xmm2, [million]
+                            mulsd       xmm0, xmm1
+                            divsd       xmm0, xmm2
+
+                            fprintf(*stdout, <27,"8",27,"[2F",27,"[56G",27,"[37m","%.02lfMn/s",0>, xmm0);
+
                     @rdata  status_fmt  xb 27,"8",27,"[12F",27,"[25C",27,"[%umCPU has %s",27,"[0m",27,"[12E",0
-                            test        [flags], FLAG_HAS_ZERO
+                    @@      test        [flags], FLAG_HAS_ZERO
                             jz          @f
                             test        [flags], FLAG_ZERO_ACK
                             jnz         @2f
@@ -451,6 +480,7 @@ _code   Start entry:        mov         r10, [stdout]
                             jnz         .end
                             rdrand      dx
                             jnc         @1b
+                            lock inc    [Count.benchmark]
 
                             test        dx, dx
                             jnz         @f
@@ -473,6 +503,7 @@ _code   Start entry:        mov         r10, [stdout]
                             jnz         .end
                             rdseed      cx
                             jnc         @b
+                            lock inc    [Count.benchmark]
 
                             test        cx, cx
                             jnz         @f
@@ -495,6 +526,7 @@ _code   Start entry:        mov         r10, [stdout]
                             jnz         .end
                             rdrand      eax
                             jnc         @b
+                            lock inc    [Count.benchmark]
 
                             test        eax, eax
                             jnz         @f
@@ -517,6 +549,7 @@ _code   Start entry:        mov         r10, [stdout]
                             jnz         .end
                             rdseed      r9d
                             jnc         @b
+                            lock inc    [Count.benchmark]
 
                             test        r9d, r9d
                             jnz         @f
@@ -539,6 +572,7 @@ _code   Start entry:        mov         r10, [stdout]
                             jnz         .end
                             rdrand      rdi
                             jnc         @b
+                            lock inc    [Count.benchmark]
 
                             test        rdi, rdi
                             jnz         @f
@@ -561,6 +595,7 @@ _code   Start entry:        mov         r10, [stdout]
                             jnz         .end
                             rdseed      rsi
                             jnc         @b
+                            lock inc    [Count.benchmark]
 
                             test        rsi, rsi
                             jnz         @f
