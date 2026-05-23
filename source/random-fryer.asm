@@ -20,57 +20,65 @@ struct TIMESPEC
         .nsec               rq 1
 end struct
 
-FLAG_MUST_EXIT = 0000_0001b
-FLAG_UPDATED   = 0000_0010b
-FLAG_UNLOCKED  = 0000_0100b
-FLAG_HAS_ZERO  = 0000_1000b
-FLAG_RSV_THRD1 = 0001_0000b
-FLAG_RSV_THRD2 = 0010_0000b
+FLAG_MUST_EXIT      = 0000_0001b
+FLAG_UPDATED        = 0000_0010b
+FLAG_UNLOCKED       = 0000_0100b
+FLAG_HAS_ZERO       = 0000_1000b
+FLAG_RSV_THRD1      = 0001_0000b
+FLAG_RSV_THRD2      = 0010_0000b
+FLAG_RSV_THRD3      = 0100_0000b
+FLAG_RSV_THRD4      = 1000_0000b
 
-FLAG_BIT_BM_TOGGLE = 6
-FLAG_BIT_BM_UNLOCK = 7
+FLAG_BIT_BM_TOGGLE  = 8
+FLAG_BIT_BM_UNLOCK  = 9
 
-FLAG_ZERO_ACK  = 1 shl 15
-FLAG_FAIL_ACK  = 1 shl 14
-FLAG_STRAIGHT  = 1 shl 13
+FLAG_UNUSED         = 1 shl 10      ; free bit (so far)
+FLAG_NO_SEED        = 1 shl 11
+FLAG_LIGHTWEIGHT    = 1 shl 12
+FLAG_STRAIGHT       = 1 shl 13
+FLAG_FAIL_ACK       = 1 shl 14
+FLAG_ZERO_ACK       = 1 shl 15
 
 
 
 _bss    align 16
         proc_brand:         xo ?
         proc_full:          xb *48
+        proc_count          xd ?
 
 _rdata  align 1
         proc_AMD            xo 'AuthenticAMD'
         proc_Intel          xo 'GenuineIntel'
 
-        header              xb '┌───────────────────────────────────────────────────────────────┐',10
-                            xb '│ ',27,'[44m'
-                            xb ' CPU Hardware Random Generator Fryer Application             '
+        header              xb '┌─────────────────────────────────────────────────────────────────────────────┐',10
+                            xb '│ ',27,'[48;5;%u;38;5;%um'
+                            xb ' CPU Hardware Random Generator Fryer Application                           '
                             xb 27,'[0m',' │',10
-                            xb '╞════╤══════════════════════════════════════════════════════════╡',10
-                            xb '│CPU:│                                                          │',10
-                            xb '├────┴───┬─────┬───────┬────────────────────────────────────────┤',10
-                            xb '│Threads:│     │Status:│                                        │',10
-                            xb '╞════════╧═════╧═══════╧════════════════════════════════════════╡',10
-                            xb '│                                                               │',10
-                            xb '└───────────────────────────────────────────────────────────────┘',10
+                            xb '╞══════╤══════════════════════════════════════════════════════╤═══════════════╡',10
+                            xb '│ CPU: │                                                      │ '
+                            xb '%sRDRAND %sRDSEED ',27,'[0m│',10
+                            xb '├──────┴───┬─────┬─────────┬──────────────────────────────────┴───────────────┤',10
+                            xb '│ Threads: │     │ Status: │                                                  │',10
+                            xb '╞══════════╧═════╧═════════╧══════════════════════════════════════════════════╡',10
+                            xb '│                                                                             │',10
+                            xb '└─────────────────────────────────────────────────────────────────────────────┘',10
+                            xb 27,'[?25l',27,'7'
                             xb 0
 
-        run_table           xb '╞═══╤════╧════╤╧═══════╧╤═════════╤═════════╤═════════╤═════════╡',10
-                            xb '│ # │ Rand 16 │ Rand 32 │ Rand 64 │ Seed 16 │ Seed 32 │ Seed 64 │',10
-                            xb '├───┼─────────┼─────────┼─────────┼─────────┼─────────┼─────────┤',10
-                            xb '│+1:│         │         │         │         │         │         │',10
-                            xb '├───┼─────────┼─────────┼─────────┼─────────┼─────────┼─────────┤',10
-                            xb '│ 0:│         │         │         │         │         │         │',10
-                            xb '├───┼─────────┼─────────┼─────────┼─────────┼─────────┼─────────┤',10
-                            xb '│-1:│         │         │         │         │         │         │',10
-                            xb '╞═══╧═════════╧═════════╧═════════╧═════════╧═════════╧═════════╡',10
-                            xb '│                                                               │',10
-                            xb '└───────────────────────────────────────────────────────────────┘',10
+        run_table           xb '╞═════╤════╧═════╧╤════════╧══╤═══════════╤═══════════╤═══════════╤═══════════╡',10
+                            xb '│  #  │  Rand 16  │  Rand 32  │  Rand 64  │  Seed 16  │  Seed 32  │  Seed 64  │',10
+                            xb '├─────┼───────────┼───────────┼───────────┼───────────┼───────────┼───────────┤',10
+                            xb '│ +1: │           │           │           │           │           │           │',10
+                            xb '├─────┼───────────┼───────────┼───────────┼───────────┼───────────┼───────────┤',10
+                            xb '│  0: │           │           │           │           │           │           │',10
+                            xb '├─────┼───────────┼───────────┼───────────┼───────────┼───────────┼───────────┤',10
+                            xb '│ -1: │           │           │           │           │           │           │',10
+                            xb '╞═════╧═══════════╧═══════════╧═══════════╧═══════════╧═══════════╧═══════════╡',10
+                            xb '│                                                                             │',10
+                            xb '└─────────────────────────────────────────────────────────────────────────────┘',10
                             xb 0
 
-        blank_row           xb '│                                                               │',0
+        blank_row           xb '│                                                                             │',0
 
         help_msg            xb 'Use this application to check if your processor can generate',10
                             xb 'the number 0 as a result from its random number generator,',10
@@ -82,10 +90,12 @@ _rdata  align 1
                             xb 'This program also counts 1 and -1 occurences as well.',10,10
                             xb 'Usage:',10,10
                             xb 9,27,'[1m','%s',27,'[0m',10
-                            xb 9,27,'[1m','%s -quick',27,'[0m',10,10
-                            xb 'By using ''-quick'' option, it skips the start messages and',10
-                            xb 'goes straight to test mode.',10,10
-                            xb 'Result are as follows:',10,10
+                            xb 9,27,'[1m','%s [ -quick | -light | -q | -l ]',27,'[0m',10,10
+                            xb 'By using ''-quick'' or ''-q'' option, it skips the start messages',10
+                            xb 'and goes straight to test mode.',10,10
+                            xb 'By using ''-light'' or ''-l'' option, threads run with less',10
+                            xb 'CPU usage.',10,10
+                            xb 'Results are as follows:',10,10
                             xb '  - 16, 32, and 64 are the requested number size in bits;',10
                             xb '  - ''rand'' stands for rdrand generated;',10
                             xb '  - ''seed'' stands for rdseed generated.',10,10
@@ -138,16 +148,21 @@ _code   Start entry:        mov         r10, [stdout]
                             pop         [stderr]
 
                             cmp         [rsp], dword 2
-                            jb          @f
-                            ja          Help
+                            jb          @f2
+                            ja          @f
                             mov         rdi, [rsp+16]
-                            mov         rax, "-quick"
-                            mov         rsi, 0_00FF_FFFF_FFFF_FFFFh
-                            mov         rcx, [rdi]
-                            and         rcx, rsi
-                            cmp         rcx, rax
-                            jne         Help
-                            or          [flags], FLAG_STRAIGHT
+                            call        ParseArg
+                            jc          Help
+                            jmp         @f2
+
+                    @@      cmp         [rsp], dword 3
+                            ja          Help
+                            mov         rdi, [rsp+24]
+                            call        ParseArg
+                            jc          Help
+                            mov         rdi, [rsp+16]
+                            call        ParseArg
+                            jc          Help
 
                     @@      mov         r9, rdx
 
@@ -161,11 +176,12 @@ _code   Start entry:        mov         r10, [stdout]
 
                     @@      mov         eax, 7
                             xor         ecx, ecx
+                            xor         esi, esi
                             cpuid
                             bt          ebx, 18
-                            jc          @f
-                            fprintf(*stderr, &ierr_fmt, "'RDSEED'");
-                            exit(2);
+                            setnc       sil
+                            rol         esi, bsf FLAG_NO_SEED
+                            or          [flags], si
 
                     @@      xor         eax, eax
                             cpuid
@@ -194,6 +210,62 @@ _code   Start entry:        mov         r10, [stdout]
                             mov         [proc_full+44], edx
 
                             __libc_start_main(&Main, [rsp+8], &rsp+16, NULL, NULL, r9, rsp);
+
+        ParseArg:           cmp         [rdi], byte '-'
+                            jne         @1f
+
+                            mov         rax, '-quick'
+                            mov         r11, '-light'
+                            mov         rsi, 0_00FF_FFFF_FFFF_FFFFh
+                            mov         rcx, [rdi]
+                            and         rcx, rsi
+
+                            cmp         rcx, rax
+                            jne         @f
+                            test        [flags], FLAG_STRAIGHT
+                            jnz         @1f
+                            or          [flags], FLAG_STRAIGHT
+                            jmp         @2f
+
+                    @@      cmp         rcx, r11
+                            jne         @f
+                            test        [flags], FLAG_LIGHTWEIGHT
+                            jnz         @1f
+                            or          [flags], FLAG_LIGHTWEIGHT
+                            jmp         @2f
+
+                    @@      cmp         ecx, '-ql'
+                            jne         @f
+                            test        [flags], FLAG_STRAIGHT or FLAG_LIGHTWEIGHT
+                            jnz         @1f
+                            or          [flags], FLAG_STRAIGHT or FLAG_LIGHTWEIGHT
+                            jmp         @2f
+
+                    @@      cmp         ecx, '-lq'
+                            jne         @f
+                            test        [flags], FLAG_STRAIGHT or FLAG_LIGHTWEIGHT
+                            jnz         @1f
+                            or          [flags], FLAG_STRAIGHT or FLAG_LIGHTWEIGHT
+                            jmp         @2f
+
+                    @@      cmp         [rdi+1], word 'q'
+                            jne         @f
+                            test        [flags], FLAG_STRAIGHT
+                            jnz         @1f
+                            or          [flags], FLAG_STRAIGHT
+                            jmp         @2f
+
+                    @@      cmp         [rdi+1], word 'l'
+                            jne         @1f
+                            test        [flags], FLAG_LIGHTWEIGHT
+                            jnz         @1f
+                            or          [flags], FLAG_LIGHTWEIGHT
+
+                    @2      clc
+                            ret
+
+                    @1      stc
+                            ret
 
 
 
@@ -236,11 +308,26 @@ _code   Start entry:        mov         r10, [stdout]
                             xor         [term.lflag], ECHO
                             tcsetattr(STDIN_FILENO, TCSADRAIN, &term);
 
-                            fprintf(*stdout, <"%s",27,"[?25l",27,"7",0>, &header);
+                    @rdata  rand.on     xb 27,"[1;38;5;190m",0
+                    @rdata  seed.on     xb 27,"[1;38;5;51m",0
+                    @rdata  seed.off    xb 27,"[0;38;5;8m",0
+                            mov         edx, 21
+                            mov         ecx, 15
+                            mov         r10d, 2
+                            mov         r11d, 16
+                            test        [flags], FLAG_LIGHTWEIGHT
+                            cmovnz      edx, r10d
+                            cmovnz      ecx, r11d
+                            lea         r9, [seed.on]
+                            lea         rax, [seed.off]
+                            test        [flags], FLAG_NO_SEED
+                            cmovnz      r9, rax
+                            fprintf(*stdout, &header, edx, ecx, &rand.on, r9);
 
                     @rdata  AMD_warn    db 27,"[33mmight have 'zero generate' problem",0
                     @rdata  Intel_msg   db 27,"[36mshould not have problem",0
                             get_nprocs();
+                            mov         [proc_count], eax
                             lea         r10, [AMD_warn]
                             lea         r8, [Intel_msg]
                             movdqa      xmm6, [proc_AMD]
@@ -255,9 +342,9 @@ _code   Start entry:        mov         r10, [stdout]
                             mov         ecx, 47
                             repe        scasb
                             fprintf(*stdout, \
-                                <27,"8",27,"[6A",27,"[7C",27,"[37m","%s", \
-                                27,"[2E",27,"[11C","%u", \
-                                27,"[26G","%s", \
+                                <27,"8",27,"[6A",27,"[9C",27,"[37m","%s", \
+                                27,"[2E",27,"[12C","% 4u", \
+                                27,"[30G","%s", \
                                 27,"[3E",27,"[0m",10,0>, \
                                 &rdi-1, r9d, r8);
 
@@ -291,28 +378,45 @@ _code   Start entry:        mov         r10, [stdout]
                             jns         @b
 
                     @@      fprintf(*stdout, <27,"8",27,"[3A%s",27,"7",0>,&run_table);
-                            fprintf(*stdout, <27,"8",27,"[10F",27,"[2C",27,"[1;38;5;134m#",27,"[3C", \
-                                27,"[38;5;190mRand 16",27,"[3CRand 32",27,"[3CRand 64",27,"[3C", \
-                                27,"[38;5;51mSeed 16",27,"[3CSeed 32",27,"[3CSeed 64",27,"[2E",27,"[C", \
-                                27,"[38;5;39m+1:",27,"[2E",27,"[C",27,"[38;5;182m 0:",27,"[2E",27,"[C", \
-                                27,"[38;5;202m-1:",27,"[0m",27,"[4E",27,"[0J",0>);
+
+                            mov         edx, 51
+                            mov         ecx, 8
+                            test        [flags], FLAG_NO_SEED
+                            cmovnz      edx, ecx
+                            fprintf(*stdout, <27,"8",27,"[10F",27,"[3C",27,"[1;38;5;134m#",27,"[5C", \
+                                27,"[38;5;190mRand 16",27,"[5CRand 32",27,"[5CRand 64",27,"[5C", \
+                                27,"[38;5;%umSeed 16",27,"[5CSeed 32",27,"[5CSeed 64",27,"[2E",27,"[2C", \
+                                27,"[38;5;39m+1:",27,"[2E",27,"[2C",27,"[38;5;182m 0:",27,"[2E",27,"[2C", \
+                                27,"[38;5;202m-1:",27,"[0m",27,"[4E",27,"[0J",0>, edx);
 
                             prefetcht2  [Count]
                             prefetcht2  [Count+32]
                             prefetcht2  [Count+64]
 
-                            sub         rsp, 64
+                            sub         rsp, 80
                             pthread_create(rsp, NULL, &RS_thread, 1);
                             pthread_create(&rsp+8, NULL, &RS_thread, 2);
+                            test        [flags], FLAG_LIGHTWEIGHT   ; 2 extra for lightweight mode
+                            jz          @f
+                            cmp         [proc_count], 6             ; also ensure 2 free cores
+                            jb          @f
+                            pthread_create(&rsp+64, NULL, &RS_thread, 3);
+                            pthread_create(&rsp+72, NULL, &RS_thread, 4);
 
-                            lock or     [flags], FLAG_UNLOCKED
+                    @@      lock or     [flags], FLAG_UNLOCKED
 
+                            mov         dx, 0011b
+                            cmp         [proc_count], 6
+                            jb          @f
+                            mov         di, 1111b
+                            test        [flags], FLAG_LIGHTWEIGHT
+                            cmovnz      dx, di
                     @@      pause
                             mfence
                             mov         ax, [flags]
                             and         ax, 0_00FFh
                             shr         ax, 4
-                            cmp         ax, 3
+                            cmp         ax, dx
                             jne         @b
 
                             clock_gettime(CLOCK_REALTIME_COARSE, &rsp+32);
@@ -375,17 +479,24 @@ _code   Start entry:        mov         r10, [stdout]
                             cmovnz      eax, edx
                             test        [flags], FLAG_ZERO_ACK
                             cmovnz      eax, ecx
-                            fprintf(*stdout, <27,"8",27,"[8F",27,"[6C",27,"[0;37m% 8u", \
-                                27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u", \
-                                27,"[2E",27,"[38;5;%um",27,"[6C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u", \
-                                27,"[2C% 8u",27,"[2C% 8u",27,"[2E",27,"[37m",27,"[6C% 8u",27,"[2C% 8u", \
-                                27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2C% 8u",27,"[2E", \
-                                27,"[33G% 18.2LfMi |",27,"[3G",27,"[1;34m", \
-                                "Frying time: %ud %02u:%02u:%04.1Lf ",27,"[2E",27,"[0J",0>, \
-                                *Count.p1.rand.16, *Count.p1.rand.32, *Count.p1.rand.64, *Count.p1.seed.16, \
-                                *Count.p1.seed.32, *Count.p1.seed.64, eax, *Count._0.rand.16, \
-                                *Count._0.rand.32, *Count._0.rand.64, *Count._0.seed.16, *Count._0.seed.32, \
-                                *Count._0.seed.64, *Count.m1.rand.16, *Count.m1.rand.32, *Count.m1.rand.64, \
+                            mov         r10d, 7
+                            mov         r11d, 8
+                            mov         r8d, eax
+                            test        [flags], FLAG_NO_SEED
+                            cmovnz      r8d, r11d
+                            cmovnz      r10d, r11d
+                            fprintf(*stdout, <27,"8",27,"[8F",27,"[8C",27,"[0;37m% 10u",27,"[2C% 10u", \
+                            27,"[2C% 10u",27,"[38;5;%um",27,"[2C% 10u",27,"[2C% 10u",27,"[2C% 10u", \
+                                27,"[2E",27,"[38;5;%um",27,"[8C% 10u",27,"[2C% 10u",27,"[2C% 10u",27,"[38;5;%um", \
+                                27,"[2C% 10u",27,"[2C% 10u",27,"[2C% 10u",27,"[2E",27,"[37m",27,"[8C% 10u", \
+                                27,"[2C% 10u",27,"[2C% 10u",27,"[38;5;%um",27,"[2C% 10u",27,"[2C% 10u",27, \
+                                "[2C% 10u",27,"[2E",27,"[37m",27,"[47G% 17.2LfMi",27,"[3G",27,"[1;34m", \
+                                "Frying time: %ud %02u:%02u:%04.1Lf ",27,"[2E",27,"[0m",27,"[0J",0>, \
+                                *Count.p1.rand.16, *Count.p1.rand.32, *Count.p1.rand.64, r10d, \
+                                *Count.p1.seed.16, *Count.p1.seed.32, *Count.p1.seed.64, eax, \
+                                *Count._0.rand.16, *Count._0.rand.32, *Count._0.rand.64, r8d, \
+                                *Count._0.seed.16, *Count._0.seed.32, *Count._0.seed.64, \
+                                *Count.m1.rand.16, *Count.m1.rand.32, *Count.m1.rand.64, r10d, \
                                 *Count.m1.seed.16, *Count.m1.seed.32, *Count.m1.seed.64, st1, \
                                 *Run.days, *Run.hours, *Run.minutes, st0);
 
@@ -413,9 +524,10 @@ _code   Start entry:        mov         r10, [stdout]
                             mulsd       xmm0, xmm1
                             divsd       xmm0, xmm2
 
-                            fprintf(*stdout, <27,"8",27,"[2F",27,"[56G",27,"[37m","%.02lfMn/s",0>, xmm0);
+                            fprintf(*stdout, \
+                                <27,"8",27,"[2F",27,"[67G",27,"[37m","│ % 5.2lfMn/s",27,"[2E",0>, xmm0);
 
-                    @rdata  status_fmt  xb 27,"8",27,"[12F",27,"[25C",27,"[%umCPU has %s",27,"[0m",27,"[12E",0
+                    @rdata  status_fmt  xb 27,"8",27,"[12F",27,"[29C",27,"[%umCPU has %s",27,"[0m",27,"[12E",0
                     @@      test        [flags], FLAG_HAS_ZERO
                             jz          @f
                             test        [flags], FLAG_ZERO_ACK
@@ -438,9 +550,14 @@ _code   Start entry:        mov         r10, [stdout]
 
                             pthread_join([rsp], NULL);
                             pthread_join([rsp+8], NULL);
+                            test        [flags], FLAG_LIGHTWEIGHT
+                            jz          @f
+                            cmp         [proc_count], 6
+                            jb          @f
+                            pthread_join([rsp+64], NULL);
+                            pthread_join([rsp+72], NULL);
 
-
-                            add         rsp, 64
+                    @@      add         rsp, 80
 
                             fprintf(*stdout, <27,"8",27,"[0m",27,"[2F%s",27,"[3G",27,"[36m", \
                                 "Finished. Iterations done: %lu.", \
@@ -500,6 +617,9 @@ _code   Start entry:        mov         r10, [stdout]
                             lock or     [flags], FLAG_UPDATED
 
                     @@      lock inc    [Count.tries]
+
+                            test        [flags], FLAG_NO_SEED
+                            jnz         @f5
                     @@      pause
                             test        [flags], FLAG_MUST_EXIT
                             jnz         .end
@@ -523,6 +643,7 @@ _code   Start entry:        mov         r10, [stdout]
                             lock or     [flags], FLAG_UPDATED
 
                     @@      lock inc    [Count.tries]
+
                     @@      pause
                             test        [flags], FLAG_MUST_EXIT
                             jnz         .end
@@ -546,6 +667,9 @@ _code   Start entry:        mov         r10, [stdout]
                             lock or     [flags], FLAG_UPDATED
 
                     @@      lock inc    [Count.tries]
+
+                            test        [flags], FLAG_NO_SEED
+                            jnz         @f5
                     @@      pause
                             test        [flags], FLAG_MUST_EXIT
                             jnz         .end
@@ -569,6 +693,7 @@ _code   Start entry:        mov         r10, [stdout]
                             lock or     [flags], FLAG_UPDATED
 
                     @@      lock inc    [Count.tries]
+
                     @@      pause
                             test        [flags], FLAG_MUST_EXIT
                             jnz         .end
@@ -592,6 +717,9 @@ _code   Start entry:        mov         r10, [stdout]
                             lock or     [flags], FLAG_UPDATED
 
                     @@      lock inc    [Count.tries]
+
+                            test        [flags], FLAG_NO_SEED
+                            jnz         @f5
                     @@      pause
                             test        [flags], FLAG_MUST_EXIT
                             jnz         .end
@@ -615,7 +743,9 @@ _code   Start entry:        mov         r10, [stdout]
                             lock or     [flags], FLAG_UPDATED
 
                     @@      lock inc    [Count.tries]
-                            mfence
+
+                            shld        rax, rsi, 48
+                            call        .delay
 
                             ; mov         esi, 600'000
                             ; mov         rax, [Count.tries]
@@ -631,3 +761,25 @@ _code   Start entry:        mov         r10, [stdout]
             .end:           pop         rbp
                             xor         rax, rax
                             ret
+
+            .delay:         test        [flags], FLAG_LIGHTWEIGHT   ; al = µs
+                            jnz         @f
+                            ret
+
+                    @@      sub         rsp, 8
+
+                            and         al, 3Fh ; 1 to 64 µs sleep
+                            inc         al      ; Use data from random number as sleep shuffling factor
+                            movzx       edi, al ; (make threads async, lowering CPU usage)
+
+                            usleep(edi);
+                            mfence
+                            test        [flags], FLAG_MUST_EXIT
+                            jz          @f
+                            add         rsp, 16
+                            jmp         .end
+
+                    @@      sched_yield();
+                            add         rsp, 8
+                            ret
+

@@ -1,5 +1,3 @@
 TODO list:
 
- - add support to run it with only rdrand instruction;
- - add lightweight mode for threads;
- - [OPT] expand table fields to allow numbers up to 99'999'999'999 instead of 1G - 1;
+ - All done, no TODOs so far, unless: "always enchance";

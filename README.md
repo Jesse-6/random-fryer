@@ -1,7 +1,7 @@
 
 # Random Fryer: zero verify tool for x86-64 RNG units
 <p align="center">
-    <img src="./screenshot/scr_AMD1.png" alt="Running on AMD processor screenshot" width=50% />
+    <img src="./screenshot/scr_AMD1.png" alt="Running on AMD processor screenshot" width=60% />
 </p>
 <p align="center">
     <i>Bottom fields: run length (blue), iterations counter | numbers per second</i>
@@ -29,9 +29,9 @@ Just copy the executable to either your O.S. default binary path (usually '/usr/
 
 ## Usage
 
-This program has 2 launch modes:
+This program has 2 command line options:
 
-Just launch it default, with all explaining messages being shown:
+Just launch it default, "frying mode", with all explaining messages being shown:
 ```
  > random-fryer
 ```
@@ -40,6 +40,27 @@ Jump straight to test mode:
 ```
  > random-fryer -quick
 ```
+or
+```
+ > random-fryer -q
+```
+
+Run in lightweight mode, which reduces CPU usage, but also reduces overall gathered numbers per second:
+```
+ > random-fryer -light
+```
+or
+```
+ > random-fryer -l
+```
+
+Also, it can be combined for both functionality:
+```
+ > random-fryer -ql
+ > random-fryer -lq
+ > random-fryer -quick -light
+```
+And so on...
 
 Any other attempt at command line options will raise the help text and exit.
 
@@ -48,7 +69,7 @@ Any other attempt at command line options will raise the help text and exit.
 This program needs:
 
  - A Linux O.S. with glibc properly installed;
- - An x86-64 processor, which supports 'rdrand' and 'rdseed' instructions (2015+ processors I guess).
+ - An x86-64 processor, which supports 'rdrand' and optionally 'rdseed' instructions (2015+ processors I guess).
  
 ## Build from source
 
