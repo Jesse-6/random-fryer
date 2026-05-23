@@ -744,7 +744,7 @@ _code   Start entry:        mov         r10, [stdout]
 
                     @@      lock inc    [Count.tries]
 
-                            shld        rax, rsi, 48
+                            shld        rax, rdi, 48
                             call        .delay
 
                             ; mov         esi, 600'000
