@@ -4,13 +4,34 @@ include 'fastcall_v1.inc'
 include 'stdmacros.inc'
 include 'stdio.inc'
 
+struct  CC_CHAR
+        .intr               db ?
+        .quit               db ?
+        .erase              db ?
+        .kill               db ?
+        .eof                db ?
+        .time               db ?
+        .min                db ?
+        .swtc               db ?
+        .start              db ?
+        .stop               db ?
+        .susp               db ?
+        .eol                db ?
+        .reprint            db ?
+        .discard            db ?
+        .w.erase            db ?
+        .l.next             db ?
+        .eol.2              db ?
+                            rb 16   ; should be 32 bytes size
+end struct
+
 struct  TERMIOS
         .iflag              rd 1    ; input mode flags
         .oflag              rd 1    ; output mode flags
         .cflag              rd 1    ; control mode flags
         .lflag              rd 1    ; local mode flags
         .line               rd 1    ; line discipline
-        .cc                 rb 32   ; control characters
+        .cc                 CC_CHAR ; control characters
         .ispeed             rd 1    ; input speed
         .ospeed             rd 1    ; output speed
 end struct
@@ -305,8 +326,12 @@ _code   Start entry:        mov         r10, [stdout]
                     @bss    term        TERMIOS
                             tcdrain(STDOUT_FILENO);
                             tcgetattr(STDIN_FILENO, &term);
-                            xor         [term.lflag], ECHO
+                            and         [term.lflag], not (ECHO or ICANON)
                             tcsetattr(STDIN_FILENO, TCSADRAIN, &term);
+
+                            fcntl(STDIN_FILENO, F_GETFL, 0);
+                            or          eax, O_NONBLOCK
+                            fcntl(STDIN_FILENO, F_SETFL, eax);
 
                     @rdata  rand.on     xb 27,"[1;38;5;190m",0
                     @rdata  seed.on     xb 27,"[1;38;5;51m",0
@@ -351,33 +376,55 @@ _code   Start entry:        mov         r10, [stdout]
                             signal(SIGINT, &FlagBreak);
 
                             test        [flags], FLAG_STRAIGHT
-                            jnz         @f2
+                            jnz         @2f
 
                             fprintf(*stdout, <27,"8",27,"[2A",27,"[2C",27,"[1;36m", \
                                 "Check if this processor can generate 0 as a random number!", \
                                 27,"[0m",27,"[2E",27,"[0J",0>);
-                            usleep(10'000'000);
+
+                            mov         ebx, 100
+                    @1      usleep(100'000);
                             test        [flags], FLAG_MUST_EXIT
                             jnz         Main.abort
 
-                            mov         ebx, 100
+                    @bss    typebuff    xb *8
+                            read(STDIN_FILENO, &typebuff, 8);
+                            test        eax, eax
+                            jle         @f
+                            cmp         [typebuff], 'q'
+                            je          Main.abort
+                            cmp         [typebuff], 'Q'
+                            je          Main.abort
 
-                    @@      mov         edx, 10
+                    @@      dec         ebx
+                            jns         @1b
+
+                            mov         ebx, 100
+                    @1      mov         edx, 10
                             cvtsi2sd    xmm0, ebx
                             cvtsi2sd    xmm5, edx
                             divsd       xmm0, xmm5
                             fprintf(*stdout, <27,"8",27,"[2A",27,"[2C", \
                                 27,"[1;33m","Starting in %.01lf seconds, press ",27,"[32mCTRL-C", \
-                                27,"[33m to quit at anytime...  ",27,"[0m", \
+                                27,"[33m or ",27,"[32m'Q'",27,"[33m to quit at anytime...  ",27,"[0m", \
                                 27,"[2E",27,"[0J",0>, xmm0);
                             fflush(*stdout);
                             usleep(100'000);
                             test        [flags], FLAG_MUST_EXIT
                             jnz         Main.abort
-                            dec         ebx
-                            jns         @b
 
-                    @@      fprintf(*stdout, <27,"8",27,"[3A%s",27,"7",0>,&run_table);
+                            read(STDIN_FILENO, &typebuff, 8);
+                            test        eax, eax
+                            jle         @f
+                            cmp         [typebuff], 'q'
+                            je          Main.abort
+                            cmp         [typebuff], 'Q'
+                            je          Main.abort
+
+                    @@      dec         ebx
+                            jns         @1b
+
+                    @2      fprintf(*stdout, <27,"8",27,"[3A%s",27,"7",0>,&run_table);
 
                             mov         edx, 51
                             mov         ecx, 8
@@ -422,10 +469,22 @@ _code   Start entry:        mov         r10, [stdout]
                             clock_gettime(CLOCK_REALTIME_COARSE, &rsp+32);
 
                     @1      usleep(50'000);
+
+                            read(STDIN_FILENO, &typebuff, 8);
+                            test        eax, eax
+                            jle         @f2
+                            cmp         [typebuff], 'q'
+                            jne         @f
+                            lock or     [flags], FLAG_MUST_EXIT
+                            jmp         @f2
+                    @@      cmp         [typebuff], 'Q'
+                            jne         @f
+                            lock or     [flags], FLAG_MUST_EXIT
+
                             ; test        [flags], FLAG_UPDATED
                             ; jz          @3f
 
-                            clock_gettime(CLOCK_REALTIME_COARSE, &rsp+16);
+                    @@      clock_gettime(CLOCK_REALTIME_COARSE, &rsp+16);
 
                     @rdata  billion     xd 1'000'000'000
                     @rdata  million     xd 1'000'000
@@ -570,8 +629,12 @@ _code   Start entry:        mov         r10, [stdout]
                                 27,"[3G",27,"[1;33mAborted.",27,"[0m",27,"[2E",27,"[0J",0>, \
                                 &blank_row);
 
-        Main.end:           xor         [term.lflag], ECHO
+        Main.end:           xor         [term.lflag], ECHO or ICANON
                             tcsetattr(STDIN_FILENO, TCSAFLUSH, &term);
+
+                            fcntl(STDIN_FILENO, F_GETFL, 0);
+                            and         eax, not O_NONBLOCK
+                            fcntl(STDIN_FILENO, F_SETFL, eax);
 
                             pop         rbx
                             xor         eax, eax
