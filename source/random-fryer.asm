@@ -1,7 +1,6 @@
 format ELF64 executable 3 at 4 shl 36
 
-include 'fastcall_v1.inc'
-include 'stdmacros.inc'
+include 'fastcall3.inc'
 include 'stdio.inc'
 
 struct  CC_CHAR
@@ -71,7 +70,7 @@ _rdata  align 1
         proc_AMD            xo 'AuthenticAMD'
         proc_Intel          xo 'GenuineIntel'
 
-        header              xb '┌─────────────────────────────────────────────────────────────────────────────┐',10
+        header:             xb '┌─────────────────────────────────────────────────────────────────────────────┐',10
                             xb '│ ',27,'[48;5;%u;38;5;%um'
                             xb ' CPU Hardware Random Generator Fryer Application                           '
                             xb 27,'[0m',' │',10
@@ -86,7 +85,7 @@ _rdata  align 1
                             xb 27,'[?25l',27,'7'
                             xb 0
 
-        run_table           xb '╞═════╤════╧═════╧╤════════╧══╤═══════════╤═══════════╤═══════════╤═══════════╡',10
+        run_table:          xb '╞═════╤════╧═════╧╤════════╧══╤═══════════╤═══════════╤═══════════╤═══════════╡',10
                             xb '│  #  │  Rand 16  │  Rand 32  │  Rand 64  │  Seed 16  │  Seed 32  │  Seed 64  │',10
                             xb '├─────┼───────────┼───────────┼───────────┼───────────┼───────────┼───────────┤',10
                             xb '│ +1: │           │           │           │           │           │           │',10
@@ -99,9 +98,9 @@ _rdata  align 1
                             xb '└─────────────────────────────────────────────────────────────────────────────┘',10
                             xb 0
 
-        blank_row           xb '│                                                                             │',0
+        blank_row:          xb '│                                                                             │',0
 
-        help_msg            xb 'Use this application to check if your processor can generate',10
+        help_msg:           xb 'Use this application to check if your processor can generate',10
                             xb 'the number 0 as a result from its random number generator,',10
                             xb 'accessible via ''rdrand'' and ''rdseed'' instructions. I,',10
                             xb 'Jesse 6, have figured out that my Zen2 AMD Ryzen 7 processor',10
@@ -187,12 +186,12 @@ _code   Start entry:        mov         r10, [stdout]
 
                     @@      mov         r9, rdx
 
-                    @rdata  ierr_fmt    xb "Your processor does not support %s instruction",10,0
+                    @rdata  ierr_fmt:   xb "Your processor does not support %s instruction",10,0
                             mov         eax, 1
                             cpuid
                             bt          ecx, 30
                             jc          @f
-                            fprintf(*stderr, &ierr_fmt, "'RDRAND'");
+                            fprintf(stderr, ierr_fmt, "'RDRAND'");
                             exit(1);
 
                     @@      mov         eax, 7
@@ -230,7 +229,7 @@ _code   Start entry:        mov         r10, [stdout]
                             mov         [proc_full+40], ecx
                             mov         [proc_full+44], edx
 
-                            __libc_start_main(&Main, [rsp+8], &rsp+16, NULL, NULL, r9, rsp);
+                            __libc_start_main(Main, [rsp+8], rsp+16, NULL, NULL, r9, rsp);
 
         ParseArg:           cmp         [rdi], byte '-'
                             jne         @1f
@@ -316,7 +315,7 @@ _code   Start entry:        mov         r10, [stdout]
                             xor         eax, eax
                             div         r11
 
-                            fprintf(*stderr, &help_msg, rdi, rdi, rsi, r10, rax, rdx);
+                            fprintf(stderr, help_msg, rdi, rdi, rsi, r10, rax, rdx);
                             exit(3);
 
 
@@ -325,17 +324,17 @@ _code   Start entry:        mov         r10, [stdout]
 
                     @bss    term        TERMIOS
                             tcdrain(STDOUT_FILENO);
-                            tcgetattr(STDIN_FILENO, &term);
+                            tcgetattr(STDIN_FILENO, term);
                             and         [term.lflag], not (ECHO or ICANON)
-                            tcsetattr(STDIN_FILENO, TCSADRAIN, &term);
+                            tcsetattr(STDIN_FILENO, TCSADRAIN, term);
 
                             fcntl(STDIN_FILENO, F_GETFL, 0);
                             or          eax, O_NONBLOCK
                             fcntl(STDIN_FILENO, F_SETFL, eax);
 
-                    @rdata  rand.on     xb 27,"[1;38;5;190m",0
-                    @rdata  seed.on     xb 27,"[1;38;5;51m",0
-                    @rdata  seed.off    xb 27,"[0;38;5;8m",0
+                    @rdata  rand.on:    xb 27,"[1;38;5;190m",0
+                    @rdata  seed.on:    xb 27,"[1;38;5;51m",0
+                    @rdata  seed.off:   xb 27,"[0;38;5;8m",0
                             mov         edx, 21
                             mov         ecx, 15
                             mov         r10d, 2
@@ -347,10 +346,10 @@ _code   Start entry:        mov         r10, [stdout]
                             lea         rax, [seed.off]
                             test        [flags], FLAG_NO_SEED
                             cmovnz      r9, rax
-                            fprintf(*stdout, &header, edx, ecx, &rand.on, r9);
+                            fprintf(stdout, header, edx, ecx, rand.on, r9);
 
-                    @rdata  AMD_warn    db 27,"[33mmight have 'zero generate' problem",0
-                    @rdata  Intel_msg   db 27,"[36mshould not have problem",0
+                    @rdata  AMD_warn:   db 27,"[33mmight have 'zero generate' problem",0
+                    @rdata  Intel_msg:  db 27,"[36mshould not have problem",0
                             get_nprocs();
                             mov         [proc_count], eax
                             lea         r10, [AMD_warn]
@@ -366,21 +365,22 @@ _code   Start entry:        mov         r10, [stdout]
                             xchg        eax, r9d
                             mov         ecx, 47
                             repe        scasb
-                            fprintf(*stdout, \
+                            fprintf(stdout, \
                                 <27,"8",27,"[6A",27,"[9C",27,"[37m","%s", \
                                 27,"[2E",27,"[12C","% 4u", \
                                 27,"[30G","%s", \
                                 27,"[3E",27,"[0m",10,0>, \
-                                &rdi-1, r9d, r8);
+                                rdi-1, r9d, r8);
 
-                            signal(SIGINT, &FlagBreak);
+                            signal(SIGINT, FlagBreak);
 
                             test        [flags], FLAG_STRAIGHT
                             jnz         @2f
 
-                            fprintf(*stdout, <27,"8",27,"[2A",27,"[2C",27,"[1;36m", \
+                            fprintf(stdout, <27,"8",27,"[2A",27,"[2C",27,"[1;36m", \
                                 "Check if this processor can generate 0 as a random number!", \
                                 27,"[0m",27,"[2E",27,"[0J",0>);
+                            fflush(stdout);
 
                             mov         ebx, 100
                     @1      usleep(100'000);
@@ -404,11 +404,11 @@ _code   Start entry:        mov         r10, [stdout]
                             cvtsi2sd    xmm0, ebx
                             cvtsi2sd    xmm5, edx
                             divsd       xmm0, xmm5
-                            fprintf(*stdout, <27,"8",27,"[2A",27,"[2C", \
+                            fprintf(stdout, <27,"8",27,"[2A",27,"[2C", \
                                 27,"[1;33m","Starting in %.01lf seconds, press ",27,"[32mCTRL-C", \
                                 27,"[33m or ",27,"[32m'Q'",27,"[33m to quit at anytime...  ",27,"[0m", \
                                 27,"[2E",27,"[0J",0>, xmm0);
-                            fflush(*stdout);
+                            fflush(stdout);
                             usleep(100'000);
                             test        [flags], FLAG_MUST_EXIT
                             jnz         Main.abort
@@ -424,13 +424,13 @@ _code   Start entry:        mov         r10, [stdout]
                     @@      dec         ebx
                             jns         @1b
 
-                    @2      fprintf(*stdout, <27,"8",27,"[3A%s",27,"7",0>,&run_table);
+                    @2      fprintf(stdout, <27,"8",27,"[3A%s",27,"7",0>,run_table);
 
                             mov         edx, 51
                             mov         ecx, 8
                             test        [flags], FLAG_NO_SEED
                             cmovnz      edx, ecx
-                            fprintf(*stdout, <27,"8",27,"[10F",27,"[3C",27,"[1;38;5;134m#",27,"[5C", \
+                            fprintf(stdout, <27,"8",27,"[10F",27,"[3C",27,"[1;38;5;134m#",27,"[5C", \
                                 27,"[38;5;190mRand 16",27,"[5CRand 32",27,"[5CRand 64",27,"[5C", \
                                 27,"[38;5;%umSeed 16",27,"[5CSeed 32",27,"[5CSeed 64",27,"[2E",27,"[2C", \
                                 27,"[38;5;39m+1:",27,"[2E",27,"[2C",27,"[38;5;182m 0:",27,"[2E",27,"[2C", \
@@ -441,14 +441,14 @@ _code   Start entry:        mov         r10, [stdout]
                             prefetcht2  [Count+64]
 
                             sub         rsp, 80
-                            pthread_create(rsp, NULL, &RS_thread, 1);
-                            pthread_create(&rsp+8, NULL, &RS_thread, 2);
+                            pthread_create(rsp, NULL, RS_thread, 1);
+                            pthread_create(rsp+8, NULL, RS_thread, 2);
                             test        [flags], FLAG_LIGHTWEIGHT   ; 2 extra for lightweight mode
                             jz          @f
                             cmp         [proc_count], 6             ; also ensure 2 free cores
                             jb          @f
-                            pthread_create(&rsp+64, NULL, &RS_thread, 3);
-                            pthread_create(&rsp+72, NULL, &RS_thread, 4);
+                            pthread_create(rsp+64, NULL, RS_thread, 3);
+                            pthread_create(rsp+72, NULL, RS_thread, 4);
 
                     @@      lock or     [flags], FLAG_UNLOCKED
 
@@ -466,9 +466,10 @@ _code   Start entry:        mov         r10, [stdout]
                             cmp         ax, dx
                             jne         @b
 
-                            clock_gettime(CLOCK_REALTIME_COARSE, &rsp+32);
+                            clock_gettime(CLOCK_REALTIME_COARSE, rsp+32);
 
-                    @1      usleep(50'000);
+                    @1      fflush(stdout);
+                            usleep(50'000);
 
                             read(STDIN_FILENO, &typebuff, 8);
                             test        eax, eax
@@ -484,7 +485,7 @@ _code   Start entry:        mov         r10, [stdout]
                             ; test        [flags], FLAG_UPDATED
                             ; jz          @3f
 
-                    @@      clock_gettime(CLOCK_REALTIME_COARSE, &rsp+16);
+                    @@      clock_gettime(CLOCK_REALTIME_COARSE, rsp+16);
 
                     @rdata  billion     xd 1'000'000'000
                     @rdata  million     xd 1'000'000
@@ -544,20 +545,20 @@ _code   Start entry:        mov         r10, [stdout]
                             test        [flags], FLAG_NO_SEED
                             cmovnz      r8d, r11d
                             cmovnz      r10d, r11d
-                            fprintf(*stdout, <27,"8",27,"[8F",27,"[8C",27,"[0;37m% 10u",27,"[2C% 10u", \
+                            fprintf(stdout, <27,"8",27,"[8F",27,"[8C",27,"[0;37m% 10u",27,"[2C% 10u", \
                             27,"[2C% 10u",27,"[38;5;%um",27,"[2C% 10u",27,"[2C% 10u",27,"[2C% 10u", \
                                 27,"[2E",27,"[38;5;%um",27,"[8C% 10u",27,"[2C% 10u",27,"[2C% 10u",27,"[38;5;%um", \
                                 27,"[2C% 10u",27,"[2C% 10u",27,"[2C% 10u",27,"[2E",27,"[37m",27,"[8C% 10u", \
                                 27,"[2C% 10u",27,"[2C% 10u",27,"[38;5;%um",27,"[2C% 10u",27,"[2C% 10u",27, \
                                 "[2C% 10u",27,"[2E",27,"[37m",27,"[47G% 17.2LfMi",27,"[3G",27,"[1;34m", \
                                 "Frying time: %ud %02u:%02u:%04.1Lf ",27,"[2E",27,"[0m",27,"[0J",0>, \
-                                *Count.p1.rand.16, *Count.p1.rand.32, *Count.p1.rand.64, r10d, \
-                                *Count.p1.seed.16, *Count.p1.seed.32, *Count.p1.seed.64, eax, \
-                                *Count._0.rand.16, *Count._0.rand.32, *Count._0.rand.64, r8d, \
-                                *Count._0.seed.16, *Count._0.seed.32, *Count._0.seed.64, \
-                                *Count.m1.rand.16, *Count.m1.rand.32, *Count.m1.rand.64, r10d, \
-                                *Count.m1.seed.16, *Count.m1.seed.32, *Count.m1.seed.64, st1, \
-                                *Run.days, *Run.hours, *Run.minutes, st0);
+                                Count.p1.rand.16, Count.p1.rand.32, Count.p1.rand.64, r10d, \
+                                Count.p1.seed.16, Count.p1.seed.32, Count.p1.seed.64, eax, \
+                                Count._0.rand.16, Count._0.rand.32, Count._0.rand.64, r8d, \
+                                Count._0.seed.16, Count._0.seed.32, Count._0.seed.64, \
+                                Count.m1.rand.16, Count.m1.rand.32, Count.m1.rand.64, r10d, \
+                                Count.m1.seed.16, Count.m1.seed.32, Count.m1.seed.64, st1, \
+                                Run.days, Run.hours, Run.minutes, st0);
 
                             ; Benchmark display (random numbers per second)
                             lock btc    [flags], FLAG_BIT_BM_TOGGLE ;
@@ -583,15 +584,15 @@ _code   Start entry:        mov         r10, [stdout]
                             mulsd       xmm0, xmm1
                             divsd       xmm0, xmm2
 
-                            fprintf(*stdout, \
+                            fprintf(stdout, \
                                 <27,"8",27,"[2F",27,"[67G",27,"[37m","│ % 5.2lfMn/s",27,"[2E",0>, xmm0);
 
-                    @rdata  status_fmt  xb 27,"8",27,"[12F",27,"[29C",27,"[%umCPU has %s",27,"[0m",27,"[12E",0
+                    @rdata  status_fmt: xb 27,"8",27,"[12F",27,"[29C",27,"[%umCPU has %s",27,"[0m",27,"[12E",0
                     @@      test        [flags], FLAG_HAS_ZERO
                             jz          @f
                             test        [flags], FLAG_ZERO_ACK
                             jnz         @2f
-                            fprintf(*stdout, &status_fmt, 32, "passed 'zero generate' test   ");
+                            fprintf(stdout, status_fmt, 32, "passed 'zero generate' test   ");
                             lock or     [flags], FLAG_ZERO_ACK
                             jmp         @2f
 
@@ -599,7 +600,7 @@ _code   Start entry:        mov         r10, [stdout]
                             jbe         @2f
                             test        [flags], FLAG_FAIL_ACK
                             jnz         @2f
-                            fprintf(*stdout, &status_fmt, 31, "failed to generate zero number");
+                            fprintf(stdout, status_fmt, 31, "failed to generate zero number");
                             lock or     [flags], FLAG_FAIL_ACK
 
                     @2      lock and    [flags], not FLAG_UPDATED
@@ -618,19 +619,19 @@ _code   Start entry:        mov         r10, [stdout]
 
                     @@      add         rsp, 80
 
-                            fprintf(*stdout, <27,"8",27,"[0m",27,"[2F%s",27,"[3G",27,"[36m", \
+                            fprintf(stdout, <27,"8",27,"[0m",27,"[2F%s",27,"[3G",27,"[36m", \
                                 "Finished. Iterations done: %lu.", \
-                                27,"[0m",27,"[2E",27,"[?25h",27,"[0J",0>, &blank_row, *Count.tries);
-                            fflush(*stdout);
+                                27,"[0m",27,"[2E",27,"[?25h",27,"[0J",0>, blank_row, Count.tries);
+                            fflush(stdout);
 
                             jmp         Main.end
 
-        Main.abort:         fprintf(*stdout, <27,"8",27,"[?25h",27,"[2F%s", \
+        Main.abort:         fprintf(stdout, <27,"8",27,"[?25h",27,"[2F%s", \
                                 27,"[3G",27,"[1;33mAborted.",27,"[0m",27,"[2E",27,"[0J",0>, \
-                                &blank_row);
+                                blank_row);
 
         Main.end:           xor         [term.lflag], ECHO or ICANON
-                            tcsetattr(STDIN_FILENO, TCSAFLUSH, &term);
+                            tcsetattr(STDIN_FILENO, TCSAFLUSH, term);
 
                             fcntl(STDIN_FILENO, F_GETFL, 0);
                             and         eax, not O_NONBLOCK
